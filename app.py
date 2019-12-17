@@ -34,7 +34,16 @@ app = Flask(__name__)
 #################################################
 # Flask Routes
 #################################################
-
+lastdate = session.query(Measurement.date).order_by(Measurement.date.desc()).all()
+lastdate = lastdate[0]
+lastdate = str(lastdate)
+lastdate = lastdate.replace(',', '')
+lastdate = lastdate.replace('(', '')
+lastdate = lastdate.replace(')', '')
+lastdate = lastdate.replace("'", '')
+lastdate = lastdate.replace("", '')
+lastdate = dt.datetime.strptime(lastdate, '%Y-%m-%d')
+lastyear =  lastdate - dt.timedelta(days=365)
 
 
 @app.route("/")
@@ -44,9 +53,7 @@ def welcome():
         f"/api/v1.0/precipitation<br/>"
         f"/api/v1.0/stations<br/>"
         f"/api/v1.0/tobs</br>"
-        f"/api/v1.0/<start>/<end>"
-        
-        
+        f"/api/v1.0/start/end/
     )   
 
 
@@ -54,16 +61,7 @@ def welcome():
 def precipitation():
     '''somethiong'''
    # Calculate the date 1 year ago from the last data point in the database
-    lastdate = session.query(Measurement.date).order_by(Measurement.date.desc()).all()
-    lastdate = lastdate[0]
-    lastdate = str(lastdate)
-    lastdate = lastdate.replace(',', '')
-    lastdate = lastdate.replace('(', '')
-    lastdate = lastdate.replace(')', '')
-    lastdate = lastdate.replace("'", '')
-    lastdate = lastdate.replace("", '')
-    lastdate = dt.datetime.strptime(lastdate, '%Y-%m-%d')
-    lastyear =  lastdate - dt.timedelta(days=365)
+    
     # Perform a query to retrieve the data and precipitation scores
     query = session.query(Measurement.date,Measurement.prcp).filter(Measurement.date >= lastyear).\
     order_by(Measurement.date.asc()).all()
@@ -76,18 +74,27 @@ def stations():
     query_active_station = session.query(Measurement.station, func.count(Measurement.id))\
                        .group_by(Measurement.station)\
                        .order_by(func.count(Measurement.id).desc()).all()
-    return jsonify({i:j for i,j in query_active_station.desc()})
+                       
+    return jsonify({i:j for i,j in query_active_station})
+    
+   
+@app.route("/api/v1.0/tobs")
+def tobs():
 
-@app.route("/api/v1.0/<start>")
+    tobs_query = session.query(Measurement.date, Measurement.tobs).all()
+    
+    return jsonify({a:b for a,b in tobs_query})
 
     
-
-
+@app.route("/api/v1.0/<start>")     
 @app.route("/api/v1.0/<start>/<end>")
-def names(start = None, end = None):
+def names(start, end = lastdate):
 	
+    
 	if not end:
 		end = datetime.now()
+    elif end == lastdate:
+        end_date = end
     
     
 if __name__ == '__main__':
